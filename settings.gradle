@@ -1,0 +1,2 @@
+rootProject.name='example_springboot'
+include ('spring-boot','spring-boot-swagger','spring-boot-test')
