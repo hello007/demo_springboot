@@ -1,8 +1,7 @@
 package example.swagger.config;
 
 import example.swagger.annotation.ExposeSwaggerApi;
-import example.swagger.filter.SwaggerFilter;
-import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import springfox.documentation.builders.ApiInfoBuilder;
@@ -18,6 +17,16 @@ import springfox.documentation.swagger2.annotations.EnableSwagger2;
 @EnableSwagger2
 public class SwaggerConfig {
 
+    public SwaggerConfig() {
+    }
+
+    @Value(("${config.swagger-enable:true}"))
+    private boolean swaggerEnable;
+
+    @Value("${config.swagger-prefix:/basic}")
+    private String swaggerPrefix;
+
+
     @Bean
     public Docket createRestApi() {
         return new Docket(DocumentationType.SWAGGER_2)
@@ -28,9 +37,11 @@ public class SwaggerConfig {
                 //@ApiIgnore 这样,该接口就不会暴露在 swagger2 的页面下
 //                .apis(RequestHandlerSelectors.basePackage(SpringBootSwaggerApplication.class.getPackage().getName()))
                 .apis(RequestHandlerSelectors.withClassAnnotation(ExposeSwaggerApi.class))
+                // 可以只暴露固定类下的固定方法，withMethodAnnotation需要与withClassAnnotation/basePackage共同使用
+//                .apis(RequestHandlerSelectors.withMethodAnnotation(ExposeSwaggerMethod.class))
                 .paths(PathSelectors.any())
                 .build()
-                .enable(true);
+                .enable(swaggerEnable);
     }
 
     private ApiInfo apiInfo() {
@@ -46,17 +57,7 @@ public class SwaggerConfig {
                 .build();
     }
 
-    //    @Bean
-    public FilterRegistrationBean<SwaggerFilter> filterFilterRegistrationBean() {
-        FilterRegistrationBean<SwaggerFilter> bean = new FilterRegistrationBean<>();
-        bean.setFilter(swaggerFilter());
-        bean.addUrlPatterns("/*");
-        return bean;
+    public String getSwaggerPrefix() {
+        return swaggerPrefix;
     }
-
-    //    @Bean
-    public SwaggerFilter swaggerFilter() {
-        return new SwaggerFilter();
-    }
-
 }

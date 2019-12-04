@@ -1,5 +1,6 @@
 package example.swagger.controller;
 
+import example.swagger.annotation.ExposeSwaggerApi;
 import example.swagger.entity.User;
 import io.swagger.annotations.*;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,6 +14,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 @Api(tags = "用户操作")
 @RestController
+@ExposeSwaggerApi
 public class UserController {
 
     private AtomicLong atomicLong = new AtomicLong(0);
