@@ -131,3 +131,238 @@ color: #999;
 padding: 2px;">Bean的生命周期</div>
 </center>
 
+## 自动配置
+
+### 常用注解
+
+#### @Value
+
+```java
+@Value("value") 
+private String name; 
+```
+
+value 的取值可以是：
+
+- 字面量
+- 通过 `${key}` 方式从环境变量中获取值
+- 通过 `${key}` 方式全局配置文件中获取值
+- `#{SpEL}`
+
+所以，我们就可以通过 `@Value(${key})` 的方式获取全局配置文件中的指定配置项。
+
+#### @ConfigurationProperties
+
+标有 `@ConfigurationProperties` 的类的所有属性和配置文件中相关的配置项进行绑定。（默认从全局配置文件中获取配置值），绑定之后我们就可以通过这个类去访问全局配置文件中的属性值了。
+
+下面看一个实例：
+
+1.在主配置文件中添加如下配置
+
+```properties
+person.name=kundy 
+person.age=13 
+person.sex=male 
+```
+
+2.创建配置类，由于篇幅问题这里省略了 setter、getter 方法，但是实际开发中这个是必须的，否则无法成功注入。另外，@Component 这个注解也还是需要添加的。
+
+```java
+@Component 
+@ConfigurationProperties(prefix = "person") 
+public class Person { 
+
+private String name; 
+private Integer age; 
+private String sex; 
+
+} 
+```
+
+这里 `@ConfigurationProperties` 有一个 prefix 参数，主要是用来指定该配置项在配置文件中的前缀。
+
+#### @Import 
+
+##### **@Import 三种使用方式**
+
+- 直接导入普通的 Java 类。
+- 配合自定义的 ImportSelector 使用。
+- 配合 ImportBeanDefinitionRegistrar 使用。
+
+三种使用方式完整的Configuration类
+
+```java
+@Configuration
+@Import(value = {Dog.class, CatImportSelector.class, PigImportBeanDefinitionRegistrar.class})
+public class AppConfig {
+
+
+}
+```
+
+##### 直接导入普通的java类
+
+1. 声明Dog类
+
+```java
+public class Dog implements ISay {
+
+    public void say() {
+        System.out.println("汪汪");
+    }
+}
+```
+
+2. 添加到Config的Import中
+
+##### 配合自定义的 ImportSelector 使用
+
+1. 创建普通的Java类
+
+```java
+public class Cat implements ISay {
+    @Override
+    public void say() {
+        System.out.println("喵喵喵！ ImportSelect!!");
+    }
+}
+```
+
+2. 创建ImportSelector实现类，并返回Cat的全类名
+
+```java
+public class CatImportSelector implements ImportSelector {
+    @Override
+    public String[] selectImports(AnnotationMetadata importingClassMetadata) {
+        return new String[]{"test.prop.autowired.entity.Cat"};
+    }
+}
+```
+
+3. 添加Selector到Config类中
+
+##### 配合 ImportBeanDefinitionRegistrar 使用
+
+1. 创建普通Pig类
+
+```java
+public class Pig implements ISay {
+
+    @Override
+    public void say() {
+        System.out.println("Pig from registrar");
+    }
+}
+```
+
+2. 创建 ImportBeanDefinitionRegistrar 实现类，实现方法直接手动注册一个名叫 rectangle 的 Bean 到 IOC 容器中。
+
+```java
+public class PigImportBeanDefinitionRegistrar implements ImportBeanDefinitionRegistrar {
+    @Override
+    public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
+        RootBeanDefinition rootBeanDefinition = new RootBeanDefinition(Pig.class);
+        registry.registerBeanDefinition("pig", rootBeanDefinition);
+    }
+}
+```
+
+3. 添加Registrar类到Config中
+
+##### 编写测试
+
+```java
+Map<String, ISay> says = applicationContext.getBeansOfType(ISay.class);
+says.values().forEach((say) -> {
+    if (say != null) {
+        say.say();
+    }
+});
+```
+
+输出结果为：
+
+> 汪汪
+> 喵喵喵！ ImportSelect!!
+> Pig from registrar
+
+### @Conditional
+
+> @Conditional 注释可以实现只有在特定条件满足时才启用一些配置。
+
+####  常用注解
+
+| @Conditional派生注解            | 作用(都是判断是否符合指定的条件)               |
+| :------------------------------ | :--------------------------------------------- |
+| @ConditionalOnJava              | 系统的java版本是否符合要求                     |
+| @ConditionalOnBean              | 有指定的Bean类                                 |
+| @ConditionalOnMissingBean       | 没有指定的bean类                               |
+| @ConditionalOnExpression        | 符合指定的SpEL表达式                           |
+| @ConditionalOnClass             | 有指定的类                                     |
+| @ConditionalOnMissingClass      | 没有指定的类                                   |
+| @ConditionalOnSingleCandidate   | 容器只有一个指定的bean，或者这个bean是首选bean |
+| @ConditionalOnProperty          | 指定的property属性有指定的值                   |
+| @ConditionalOnResource          | 路径下存在指定的资源                           |
+| @ConditionalOnWebApplication    | 系统环境是web环境                              |
+| @ConditionalOnNotWebApplication | 系统环境不是web环境                            |
+| @ConditionalOnjndi              | JNDI存在指定的项                               |
+
+#### 自定义Conditional
+
+##### 实现Condition接口
+
+实现org.springframework.context.annotation.Condition接口的matcher方法，符合条件则返回true，否则则返回false。
+
+```java
+public class NotEmptyConditional implements Condition {
+    @Override
+    public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
+        Map<String, Object> annotationAttributes = metadata.getAnnotationAttributes(ConditionalNotEmptyProperty.class.getName());
+
+        Environment environment = context.getEnvironment();
+        // get key
+        Object key = annotationAttributes.get("key");
+        if (key instanceof String[]) {
+            String[] keys = (String[]) key;
+            for (String one : keys) {
+                String property = environment.getProperty(one);
+                if (property == null) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+}
+```
+
+##### 自定义Conditional注解
+
+注解需要添加@Conditional，指定Condition实现类
+
+```java
+@Documented
+@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.RUNTIME)
+@Conditional(NotEmptyConditional.class)
+public @interface ConditionalNotEmptyProperty {
+    String[] key() default {};
+}
+```
+
+##### 测试
+
+```java
+@Configuration
+@ConditionalNotEmptyProperty(key = {"abc"})
+public class NotEmptyConfiguration {
+    public NotEmptyConfiguration() {
+        System.err.println("NotEmptyConfiguration Constructor!!");
+    }
+}
+```
+
+
+
+
+
