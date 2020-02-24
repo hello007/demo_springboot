@@ -1,2 +1,5 @@
 rootProject.name='example_springboot'
 include ('spring-boot','spring-boot-swagger','spring-boot-test')
+include 'spring-boot-jdbc'
+include 'spring-boot-graphql'
+include 'spring-boot-adps'

@@ -1,10 +1,10 @@
-package liu.springbootswagger;
+package liu.springboot;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class SpringBootSwaggerApplicationTests {
+class AdpsApplicationTests {
 
     @Test
     void contextLoads() {

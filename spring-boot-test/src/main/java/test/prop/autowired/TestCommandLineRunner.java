@@ -3,10 +3,12 @@ package test.prop.autowired;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.ApplicationContext;
+import org.springframework.core.io.support.SpringFactoriesLoader;
 import org.springframework.stereotype.Component;
 import test.prop.autowired.entity.Dog;
 import test.prop.autowired.entity.ISay;
 
+import java.util.List;
 import java.util.Map;
 
 @Component
@@ -29,6 +31,13 @@ public class TestCommandLineRunner implements CommandLineRunner {
             doSay(say);
         });
 
+        // 获取spring.factories中定义的ISay
+        List<ISay> iSays = SpringFactoriesLoader.loadFactories(ISay.class, null);
+        iSays.forEach((say) -> {
+            if (say != null) {
+                say.say();
+            }
+        });
     }
 
     public void doSay(ISay say) {

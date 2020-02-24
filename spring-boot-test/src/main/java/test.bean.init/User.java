@@ -6,7 +6,7 @@ import org.springframework.beans.factory.InitializingBean;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
-public class User implements InitializingBean, DisposableBean {
+public class User implements InitializingBean, DisposableBean, CustomStringAware {
     public User() {
         System.out.println("bean constructor");
     }
@@ -37,5 +37,10 @@ public class User implements InitializingBean, DisposableBean {
     @Override
     public void destroy() throws Exception {
         System.out.println("bean disposable");
+    }
+
+    @Override
+    public void setCustomString(String customString) {
+        System.err.println("User:" + customString);
     }
 }

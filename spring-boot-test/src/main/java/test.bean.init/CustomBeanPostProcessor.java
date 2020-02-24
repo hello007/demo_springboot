@@ -17,7 +17,10 @@ public class CustomBeanPostProcessor implements BeanPostProcessor {
     @Override
     public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
         if (bean.getClass() == User.class) {
-            System.out.println("调用postProcessAfterInitialization...");
+            System.err.println("调用postProcessAfterInitialization...");
+        }
+        if(bean instanceof  CustomStringAware) {
+            ((CustomStringAware)bean).setCustomString("String from PostProcessor!");
         }
         return bean;
     }

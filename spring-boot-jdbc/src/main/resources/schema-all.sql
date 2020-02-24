@@ -1,0 +1,6 @@
+DROP TABLE IF EXISTS SCHEMAS_TABLE;
+CREATE TABLE SCHEMAS_TABLE (
+`id` INT not null,
+`name` VARCHAR(255),
+primary key(`id`)
+);

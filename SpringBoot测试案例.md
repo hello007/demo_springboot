@@ -131,6 +131,73 @@ color: #999;
 padding: 2px;">Bean的生命周期</div>
 </center>
 
+### 用法举例
+
+#### BeanPostProcessor用法
+
+注解、AOP等功能的实现均大量使用了 `BeanPostProcessor`，比如有一个自定义注解，你完全可以实现`BeanPostProcessor`的接口，在其中判断bean对象的脑袋上是否有该注解，如果有，你可以对这个bean实例执行任何操作
+
+Aware接口：作用就是在对象实例化完成以后将Aware接口定义中规定的依赖注入到当前实例中。比如最常见的 `ApplicationContextAware`接口，实现了这个接口的类都可以获取到一个`ApplicationContext`对象。
+
+当容器中每个对象的实例化过程走到`BeanPostProcessor`前置处理这一步时，容器会检测到之前注册到容器的ApplicationContextAwareProcessor，然后就会调用其`postProcessBeforeInitialization()`方法，检查并设置Aware相关依赖。代码如下：
+
+```java
+// 代码来自org.springframework.context.support.ApplicationContextAwareProcessor
+// 其postProcessBeforeInitialization方法调用了invokeAwareInterfaces方法
+private void invokeAwareInterfaces(Object bean) {
+   if (bean instanceof EnvironmentAware) {
+      ((EnvironmentAware) bean).setEnvironment(this.applicationContext.getEnvironment());
+   }
+   if (bean instanceof EmbeddedValueResolverAware) {
+      ((EmbeddedValueResolverAware) bean).setEmbeddedValueResolver(this.embeddedValueResolver);
+   }
+   if (bean instanceof ResourceLoaderAware) {
+      ((ResourceLoaderAware) bean).setResourceLoader(this.applicationContext);
+   }
+   if (bean instanceof ApplicationEventPublisherAware) {
+      ((ApplicationEventPublisherAware) bean).setApplicationEventPublisher(this.applicationContext);
+   }
+   if (bean instanceof MessageSourceAware) {
+      ((MessageSourceAware) bean).setMessageSource(this.applicationContext);
+   }
+   if (bean instanceof ApplicationContextAware) {
+      ((ApplicationContextAware) bean).setApplicationContext(this.applicationContext);
+   }
+}
+```
+
+#### 自定义Aware
+
+定义Aware接口：
+
+```java
+public interface CustomStringAware {		
+    public void setCustomString(String customString);
+}
+```
+
+实现BeanPostProcessor接口：
+```java
+@Component
+public class CustomBeanPostProcessor implements BeanPostProcessor {
+    @Override
+    public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
+        if (bean.getClass() == User.class) {
+            System.out.println("调用postProcessBeforeInitialization...");
+        }
+        return bean;
+    }
+
+    @Override
+    public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
+        if(bean instanceof  CustomStringAware) {
+            ((CustomStringAware)bean).setCustomString("String from PostProcessor!");
+        }
+        return bean;
+    }
+}
+```
+
 ## 自动配置
 
 ### 常用注解
